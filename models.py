@@ -1,3 +1,4 @@
+import numpy as np
 import torch.nn as nn
 import random
 from collections import deque
@@ -14,7 +15,7 @@ class ReplayBuffer:
     def sample(self, batch_size):
         state_batch, action_batch, reward_batch, next_state_batch, done_batch = zip(
             *random.sample(self.buffer, batch_size))
-        return state_batch, action_batch, reward_batch, next_state_batch, done_batch
+        return np.array(state_batch), np.array(action_batch), np.array(reward_batch), np.array(next_state_batch), np.array(done_batch)
 
     def __len__(self):
         return len(self.buffer)

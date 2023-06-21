@@ -18,7 +18,6 @@ class DQNAgent:
         self.model = QNetwork(self.state_size, self.action_size)
         self.target_model = QNetwork(self.state_size, self.action_size)
         self.optimizer = optim.Adam(self.model.parameters(), lr=LEARNING_RATE)
-
         self.update_target_model()
 
     def update_target_model(self):
@@ -47,11 +46,13 @@ class DQNAgent:
         next_state_batch = torch.FloatTensor(next_state_batch)
         done_batch = torch.BoolTensor(done_batch)
 
-        current_q_values = self.model(state_batch).gather(1, action_batch.unsqueeze(1)).squeeze(1)
-        next_q_values = self.target_model(next_state_batch).max(1)[0]
-        target_q_values = reward_batch + GAMMA * next_q_values * (1 - done_batch)
+        x = self.model(state_batch)
 
-        loss = mse_loss(current_q_values, target_q_values.detach())
+        current_q_values = self.model(state_batch).gather(0, action_batch.long().unsqueeze(1))
+        next_q_values = self.target_model(next_state_batch).gather(0, action_batch.long().unsqueeze(1))
+        target_q_values = reward_batch + GAMMA * next_q_values * (1 - done_batch.long())
+
+        loss = mse_loss(current_q_values, target_q_values)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
