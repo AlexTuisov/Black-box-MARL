@@ -5,6 +5,8 @@ import numpy as np
 import random
 import torch
 from torch.nn.functional import mse_loss
+# from models import Actor, Critic
+
 
 
 class DQNAgent:
@@ -19,6 +21,7 @@ class DQNAgent:
         self.target_model = QNetwork(self.state_size, self.action_size)
         self.optimizer = optim.Adam(self.model.parameters(), lr=LEARNING_RATE)
         self.update_target_model()
+        self.loss_log = []
 
     def update_target_model(self):
         self.target_model.load_state_dict(self.model.state_dict())
@@ -50,12 +53,49 @@ class DQNAgent:
 
         current_q_values = self.model(state_batch).gather(0, action_batch.long().unsqueeze(1))
         next_q_values = self.target_model(next_state_batch).gather(0, action_batch.long().unsqueeze(1))
-        target_q_values = reward_batch + GAMMA * next_q_values * (1 - done_batch.long())
+        target_q_values = reward_batch.unsqueeze(1) + GAMMA * (next_q_values * ((1 - done_batch.long()).unsqueeze(1)))
 
         loss = mse_loss(current_q_values, target_q_values)
+        self.loss_log.append(loss.item())
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
         if self.epsilon > EPSILON_MIN:
             self.epsilon *= EPSILON_DECAY
+
+
+# class PPOAgent:
+#     def __init__(self, state_size, action_size, lr=1e-3, gamma=0.99, tau=0.95):
+#         self.state_size = state_size
+#         self.action_size = action_size
+#         self.gamma = gamma
+#         self.tau = tau
+#
+#         self.actor = Actor(state_size, action_size)
+#         self.critic = Critic(state_size)
+#         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=lr)
+#         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=lr)
+#
+#         self.states = []
+#         self.actions = []
+#         self.rewards = []
+#         self.dones = []
+#         self.next_states = []
+#         self.log_probs = []
+#
+#     def get_action(self, state):
+#         state = torch.from_numpy(state).float().unsqueeze(0)
+#         probs = self.actor(state)
+#         action_dist = torch.distributions.Categorical(probs)
+#         action = action_dist.sample()
+#         log_prob = action_dist.log_prob(action)
+#         self.log_probs.append(log_prob.detach())
+#         return action.item()
+#
+#     def store_transition(self, state, action, reward, next_state, done):
+#         self.states.append(state)
+#         self.actions.append(action)
+#         self.rewards.append(reward)
+#         self.dones.append(done)
+#         self.next_states.append(next_state)
