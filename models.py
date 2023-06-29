@@ -3,8 +3,14 @@ import torch.nn as nn
 import random
 from collections import deque
 import torch.nn.functional as F
+import torch
 from config import *
 
+
+def init_weights(m):
+    if isinstance(m, nn.Linear):
+        nn.init.xavier_uniform_(m.weight)
+        m.bias.data.fill_(0.01)
 
 class ReplayBuffer:
     def __init__(self, capacity):
@@ -25,41 +31,19 @@ class ReplayBuffer:
 
 class QNetwork(nn.Module):
     def __init__(self, state_size, action_size, hidden_size=HIDDEN_DQN_SIZE):
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         super(QNetwork, self).__init__()
         self.network = nn.Sequential(
             nn.Linear(state_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
+            # nn.Linear(hidden_size, hidden_size),
+            # nn.ReLU(),
             nn.Linear(hidden_size, action_size)
         )
+        self.network.apply(init_weights)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.network.to(self.device)
 
     def forward(self, x):
         return self.network(x)
 
-
-# class Actor(nn.Module):
-#     def __init__(self, state_size, action_size):
-#         super(Actor, self).__init__()
-#         self.fc1 = nn.Linear(state_size, 64)
-#         self.fc2 = nn.Linear(64, 64)
-#         self.fc3 = nn.Linear(64, action_size)
-#
-#     def forward(self, state):
-#         x = F.relu(self.fc1(state))
-#         x = F.relu(self.fc2(x))
-#         action_probs = F.softmax(self.fc3(x), dim=-1)
-#         return action_probs
-#
-# class Critic(nn.Module):
-#     def __init__(self, state_size):
-#         super(Critic, self).__init__()
-#         self.fc1 = nn.Linear(state_size, 64)
-#         self.fc2 = nn.Linear(64, 64)
-#         self.fc3 = nn.Linear(64, 1)
-#
-#     def forward(self, state):
-#         x = F.relu(self.fc1(state))
-#         x = F.relu(self.fc2(x))
-#         value = self.fc3(x)
-#         return value

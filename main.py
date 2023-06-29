@@ -3,15 +3,31 @@ from agent import DQNAgent
 from config import *
 import numpy as np
 import logging
+if WANDB:
+    import wandb
+
+    wandb.init(
+        # set the wandb project where this run will be logged
+        project="MAExplanations",
+
+        # track hyperparameters and run metadata
+        config={
+            "learning_rate": LEARNING_RATE,
+            "EPSILON_MIN": EPSILON_MIN,
+            "HIDDEN_DQN_SIZE": HIDDEN_DQN_SIZE
+        }
+    )
 
 def define_environment():
     env = knights_archers_zombies_v10.env(
-        spawn_rate=10,
-        num_archers=1,
+        spawn_rate=SPAWN_RATE,
+        num_archers=4,
         num_knights=0,
         max_zombies=10,
         max_arrows=10,
-        pad_observation=True,)
+        pad_observation=True,
+        render_mode="human",
+        )
     env.reset()
     return env
 
@@ -59,9 +75,13 @@ def main():
                 agents[agent].update_target_model()
 
         if (episode + 1) % LOG_FREQUENCY == 0:
-            # Log progress
-            logging.info(f'Episode: {episode}, Last 10 episodes reward: {last_reward} Epsilon: {agents[agent].epsilon}')
+            logging.info(f"last reward: {last_reward}, epsilon: {agents[agent].epsilon}")
             last_reward = {agent: 0 for agent in agents.keys()}
+
+        if WANDB:
+            wandb.log({"loss": agents[agent].loss, "average_score": last_reward[agent]})
+    if WANDB:
+        wandb.finish()
 
 
 def main_2():
