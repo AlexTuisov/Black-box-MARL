@@ -1,8 +1,11 @@
 from pettingzoo.butterfly import knights_archers_zombies_v10
-from agent import DQNAgent
+# from gym.spaces.discrete import Discrete
 from config import *
-import numpy as np
-import logging
+from stable_baselines3.ppo import CnnPolicy,MlpPolicy
+from stable_baselines3 import PPO
+from pettingzoo.utils.conversions import aec_to_parallel
+import supersuit as ss
+from pettingzoo.test import parallel_api_test
 if WANDB:
     import wandb
 
@@ -18,83 +21,35 @@ if WANDB:
         }
     )
 
+
 def define_environment():
     env = knights_archers_zombies_v10.env(
         spawn_rate=SPAWN_RATE,
-        num_archers=4,
-        num_knights=0,
+        num_archers=0,
+        num_knights=4,
         max_zombies=10,
         max_arrows=10,
         pad_observation=True,
         render_mode="human",
+        vector_state=True
         )
-    env.reset()
+
+    env = ss.frame_stack_v1(env, 3)
+    env = ss.black_death_v3(env)
+    env = aec_to_parallel(env)
+    env = ss.pettingzoo_env_to_vec_env_v1(env)
+    env = ss.concat_vec_envs_v1(env, 1, base_class='stable_baselines3')
+    print(env.action_space)
     return env
 
 def main():
-    # Create an instance of the environment to get the list of agents
-    logging.basicConfig(level=logging.INFO)
-
     env = define_environment()
+    model = PPO(MlpPolicy, env, verbose=1, gamma=0.95, n_steps=256, ent_coef=0.0905168, learning_rate=0.00062211,
+                vf_coef=0.042202, max_grad_norm=0.9, gae_lambda=0.99, n_epochs=5, clip_range=0.3, batch_size=256)
 
-    num_episodes = NUM_EPISODES
-    agents = {agent: DQNAgent(state_size=np.prod(env.observation_spaces[agent].shape), action_size=env.action_spaces[agent].n) for agent in env.agents}
-    agent = env.agents[0]
-    total_reward = {agent: 0 for agent in agents.keys()}
-    last_reward = {agent: 0 for agent in agents.keys()}
-    last_observations = {agent: None for agent in agents.keys()}
-    last_actions = {agent: None for agent in agents.keys()}
+    model.learn(total_timesteps=200000)
+    model.save('policy')
 
-
-    for episode in range(num_episodes):
-        env.reset()
-        print(f"entering episode {episode}")
-        for agent in env.agent_iter():
-            observation, reward, termination, truncation, info = env.last()
-            observation = observation.flatten()
-            if env.terminations[agent]:
-                agents[agent].remember(last_observations[agent], last_actions[agent], DEATH_PENALTY, observation, termination)
-                env.step(None)
-                continue
-
-            action = agents[agent].act(observation)
-
-            # Normalize reward if necessary
-            if last_observations[agent] is not None and last_actions[agent] is not None:
-                agents[agent].remember(last_observations[agent], last_actions[agent], reward, observation, termination)
-            last_observations[agent] = observation
-            last_actions[agent] = action
-            total_reward[agent] += reward
-            last_reward[agent] += reward
-
-            agents[agent].replay()  # Train the agent using replay
-            env.step(action)
-
-            # Update the target network every 'update_target_freq' steps
-            if episode % UPDATE_TARGET_FREQ == 0:
-                agents[agent].update_target_model()
-
-        if (episode + 1) % LOG_FREQUENCY == 0:
-            logging.info(f"last reward: {last_reward}, epsilon: {agents[agent].epsilon}")
-            last_reward = {agent: 0 for agent in agents.keys()}
-
-        if WANDB:
-            wandb.log({"loss": agents[agent].loss, "average_score": last_reward[agent]})
-    if WANDB:
-        wandb.finish()
-
-
-def main_2():
-    env = knights_archers_zombies_v10.env(render_mode="human")
-    env.reset()
-    for agent in env.agent_iter():
-        observation, reward, termination, truncation, info = env.last()
-
-        action = env.action_space(agent).sample() # this is where you would insert your policy
-        if env.terminations[agent]:
-            env.step(None)
-            continue
-        env.step(action)
 
 if __name__ == '__main__':
     main()
