@@ -7,7 +7,7 @@ from stable_baselines3 import PPO, DQN
 from pettingzoo.utils.conversions import aec_to_parallel
 import supersuit as ss
 from stable_baselines3.common.vec_env import VecTransposeImage
-
+from wrappers import *
 
 
 def define_base_environment(visual):
@@ -17,14 +17,16 @@ def define_base_environment(visual):
         num_archers=ARCHERS,
         num_knights=KNIGHTS,
         max_zombies=ZOMBIES,
-        max_arrows=10,
+        max_arrows=2*ARCHERS,
         pad_observation=True,
         render_mode=render_mode,
-        vector_state=VECTOR_INPUT
+        vector_state=VECTOR_INPUT,
+        max_cycles=2400
     )
     if not VECTOR_INPUT:
         env = ss.color_reduction_v0(env, mode="B")
         env = ss.resize_v1(env, x_size=84, y_size=84)
+    env = RewardShapedEnv(env)
     env = ss.frame_stack_v1(env, 3)
     env = ss.black_death_v3(env)
 
@@ -35,7 +37,7 @@ def define_environment_for_training():
     env = aec_to_parallel(env)
     env = ss.pettingzoo_env_to_vec_env_v1(env)
     # env = ss.concat_vec_envs_v1(env, 1, base_class='stable_baselines3')
-    env = ss.concat_vec_envs_v1(env, 4, base_class='stable_baselines3')
+    env = ss.concat_vec_envs_v1(env, 4, num_cpus=4, base_class='stable_baselines3')
     return env
 
 def define_environment_for_playing():
