@@ -3,7 +3,7 @@ ppo = True
 MODEL = 'PPO' if ppo else 'DQN'
 FRAMES_TO_LEARN = 10000000
 SPAWN_RATE = 40
-ARCHERS = 1
+ARCHERS = 2
 KNIGHTS = 1
 ZOMBIES = ARCHERS * 2 + KNIGHTS
 VECTOR_INPUT = True
@@ -28,7 +28,7 @@ else:
     GAMMA = 1-0.00393
     ENTROPY_COEFFICIENT = 0.0000708
 
-TRAIN = False
+TRAIN = True
 
 # optuna hyperparams
 N_TRIALS = 50

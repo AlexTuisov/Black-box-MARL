@@ -21,13 +21,12 @@ def define_base_environment(visual):
         pad_observation=True,
         render_mode=render_mode,
         vector_state=VECTOR_INPUT,
-        max_cycles=2400
+        max_cycles=2400,
     )
     if not VECTOR_INPUT:
         env = ss.color_reduction_v0(env, mode="B")
         env = ss.resize_v1(env, x_size=84, y_size=84)
-    env = RewardShapedEnv(env)
-    env = ss.frame_stack_v1(env, 3)
+    env = RewardShapingEnv(env)
     env = ss.black_death_v3(env)
 
     return env
@@ -36,7 +35,6 @@ def define_environment_for_training():
     env = define_base_environment(visual=False)
     env = aec_to_parallel(env)
     env = ss.pettingzoo_env_to_vec_env_v1(env)
-    # env = ss.concat_vec_envs_v1(env, 1, base_class='stable_baselines3')
     env = ss.concat_vec_envs_v1(env, 4, num_cpus=4, base_class='stable_baselines3')
     return env
 

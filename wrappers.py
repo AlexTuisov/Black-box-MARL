@@ -1,21 +1,41 @@
 from pettingzoo.butterfly import knights_archers_zombies_v10
-from pettingzoo import AECEnv
-from pettingzoo.utils.wrappers import BaseWrapper
+from supersuit.utils.base_aec_wrapper import PettingzooWrap
+import numpy as np
+from config import *
+from supersuit.lambda_wrappers import reward_lambda_v0
 
 
-class RewardShapedEnv(BaseWrapper):
+def reward_shaping(obs):
+    dist = np.sum(obs[1:KNIGHTS+ARCHERS+1, 0])
+    return max(dist/1000, 0.0005)
 
 
-    def step(self, action) -> None:
-        self.env.step(action)
+class RewardShapingEnv(PettingzooWrap):
+    def __init__(self, env):
+        super().__init__(env)
 
-        self.agent_selection = self.env.agent_selection
-        # here the shaping takes place
-        self.rewards = self.env.rewards
-        self.terminations = self.env.terminations
-        self.truncations = self.env.truncations
-        self.infos = self.env.infos
-        self.agents = self.env.agents
-        self._cumulative_rewards = self.env._cumulative_rewards
+    def _check_wrapper_params(self):
+        pass
 
+    def _modify_spaces(self):
+        pass
 
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed, options=options)
+        self.rewards = {
+            agent: 0
+            for agent, reward in self.rewards.items()
+        }
+        self.__cumulative_rewards = {a: 0 for a in self.agents}
+        self._accumulate_rewards()
+
+    def step(self, action):
+        agent = self.env.agent_selection
+        super().step(action)
+        self.rewards = {
+            agent: reward + reward_shaping(self.env.observe(agent))
+            for agent, reward in self.rewards.items()
+        }
+        self.__cumulative_rewards[agent] = 0
+        self._cumulative_rewards = self.__cumulative_rewards
+        self._accumulate_rewards()
