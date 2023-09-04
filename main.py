@@ -1,6 +1,7 @@
 from pettingzoo.butterfly import knights_archers_zombies_v10
 from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnNoModelImprovement
 from config import *
+import imageio
 import numpy as np
 from stable_baselines3.ppo import CnnPolicy,MlpPolicy
 from stable_baselines3 import PPO, DQN
@@ -12,6 +13,8 @@ from wrappers import *
 
 def define_base_environment(visual):
     render_mode = "human" if visual else None
+    if CREATE_DATASET:
+        render_mode = "rgb_array"
     env = knights_archers_zombies_v10.env(
         spawn_rate=SPAWN_RATE,
         num_archers=ARCHERS,
@@ -47,10 +50,10 @@ def train():
     eval_env = define_environment_for_training()
     if not VECTOR_INPUT:
         eval_env = VecTransposeImage(eval_env)
-    stop_train_callback = StopTrainingOnNoModelImprovement(max_no_improvement_evals=10, min_evals=10, verbose=1)
+    stop_train_callback = StopTrainingOnNoModelImprovement(max_no_improvement_evals=MAX_NO_IMPROVEMENT_EVALS, min_evals=MAX_NO_IMPROVEMENT_EVALS, verbose=1)
     eval_callback = EvalCallback(eval_env, best_model_save_path="./logs/", verbose=1,
                                  log_path="./logs/", eval_freq=10000, callback_after_eval=stop_train_callback,
-                                 n_eval_episodes=10, deterministic=True, render=False)
+                                 n_eval_episodes=12, deterministic=True, render=False)
     if ppo:
         model = PPO(MlpPolicy if VECTOR_INPUT else CnnPolicy,
                     env,
@@ -79,16 +82,38 @@ def load_policy():
             else:
                 act = model.predict(obs, deterministic=True)[0]
             env.step(act)
-    return model
+
+def record_gifs():
+    env = define_environment_for_playing()
+    model = PPO.load(FILE_PATH)
+    for i in range(DATASET_SIZE):
+        print(f'starting on gif number {i+1}')
+        images = []
+        env.reset()
+        for agent in env.agent_iter():
+            obs, reward, termination, truncation, info = env.last()
+            if not np.any(obs) and truncation:
+                act = None
+            else:
+                act = model.predict(obs, deterministic=True)[0]
+            env.step(act)
+            img = env.render()
+            images.append(img)
+        # print(images)
+        imageio.mimsave(f'gifs/kaz_{i}.gif', [np.array(img) for i, img in enumerate(images) if i % 2 == 0], duration=10)
 
 
 def main():
     if TRAIN:
         train()
-        training_result = np.load(FILE_PATH)
-        for result in training_result:
-            print(result)
+        # training_result = PPO.load(FILE_PATH)
+        # for result in training_result:
+        #     print(result)
+    elif CREATE_DATASET:
+        record_gifs()
+
     load_policy()
+
 
 
 
