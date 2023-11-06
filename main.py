@@ -49,11 +49,9 @@ def load_single_agent_policy():
             elif "knight" in agent:
                 act = knight_model.predict(transform_array_to_single_knight(obs, lower_bound, higher_bound),
                                            deterministic=False)[0]
-                # distribution = knight_model.
             elif "archer" in agent:
                 act = archer_model.predict(transform_array_to_single_archer(obs, 0.3),
                                            deterministic=False)[0]
-
             env.step(act)
 
 
@@ -120,8 +118,6 @@ def create_dataset():
 
 
 
-
-
 def main():
     if TRAIN:
         train()
@@ -133,8 +129,6 @@ def main():
         load_single_agent_policy()
     else:
         load_policy()
-
-
 
 
 

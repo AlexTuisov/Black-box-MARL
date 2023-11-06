@@ -19,7 +19,7 @@ def transform_array_to_single_knight(input_array, lower_bound, higher_bound):
 
     if COORDINATION:
         mask = ((input_array[-ZOMBIES:, 1] + input_array[0, 1]) > lower_bound) & ((input_array[-ZOMBIES:, 1] + input_array[0, 1]) <= higher_bound)
-        output_array[-ZOMBIES:, :] = input_array[-ZOMBIES:, :]* mask[:, np.newaxis]
+        output_array[-ZOMBIES:, :] = input_array[-ZOMBIES:, :] * mask[:, np.newaxis]
     else:
         output_array[-ZOMBIES:, :] = input_array[-ZOMBIES:, :]
     return output_array
