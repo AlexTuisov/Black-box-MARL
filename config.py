@@ -1,4 +1,5 @@
 import time
+
 ppo = True
 MODEL = 'PPO' if ppo else 'DQN'
 FRAMES_TO_LEARN = 10000000
@@ -15,7 +16,7 @@ FILE_PATH = f'{MODEL}_{mode}_{ARCHERS}_{KNIGHTS}_{SPAWN_RATE}'
 SINGLE_KNIGHT_FILE_PATH = f'{MODEL}_{mode}_0_1_90'
 SINGLE_ARCHER_FILE_PATH = f'{MODEL}_{mode}_1_0_40'
 MONITOR = False
-NUMBER_OF_GAMES_TO_CHECK_MODEL = 10
+NUMBER_OF_GAMES_TO_CHECK_MODEL = 50
 
 #optimized hyperparameters for 2 agents
 if ARCHERS + KNIGHTS < 3:

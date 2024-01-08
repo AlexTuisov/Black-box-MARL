@@ -1,14 +1,19 @@
-from config import *
+import time
 import numpy as np
-from pettingzoo.butterfly import knights_archers_zombies_v10
-from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnNoModelImprovement
-from config import *
-import imageio
-from stable_baselines3.ppo import CnnPolicy,MlpPolicy
+from icecream import ic
+
+from config import (
+    COORDINATION, ZOMBIES, VECTOR_INPUT, SPAWN_RATE, ARCHERS, KNIGHTS, MAX_NO_IMPROVEMENT_EVALS,
+    LEARNING_RATE, GAMMA, ENTROPY_COEFFICIENT, NUM_EPOCHS, NUM_STEPS, FRAMES_TO_LEARN, FILE_PATH
+)
+
 from stable_baselines3 import PPO, DQN
+from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnNoModelImprovement
+from stable_baselines3.common.vec_env import VecTransposeImage
+from stable_baselines3.ppo import MlpPolicy, CnnPolicy
+
 from pettingzoo.utils.conversions import aec_to_parallel
 import supersuit as ss
-from stable_baselines3.common.vec_env import VecTransposeImage
 from wrappers import *
 
 
